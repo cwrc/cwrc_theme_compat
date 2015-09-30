@@ -1,0 +1,104 @@
+<?php
+/**
+ * @file
+ * Code for the cwrc_theme_compat feature.
+ */
+
+include_once 'cwrc_theme_compat.features.inc';
+
+function cwrc_theme_compat_preprocess_islandora_basic_collection(&$variables) {
+  _cwrc_theme_compat_add_collection_classes($variables);
+}
+
+function cwrc_theme_compat_preprocess_islandora_basic_collection_grid(&$variables) {
+  _cwrc_theme_compat_add_collection_classes($variables);
+}
+
+function _cwrc_theme_compat_add_collection_classes(&$variables) {
+  foreach ($variables['associated_objects_array'] as $pid => $obj) {
+    if (!array_key_exists('object', $obj)) return;
+
+    foreach ($obj['object']->models as $model) {
+      $variables['associated_objects_array'][$pid]['class'] .= ' ' . str_replace('.', '-', strtolower(str_replace(':', '-', $model)));
+    }
+  }
+}
+
+function cwrc_theme_compat_views_bulk_operations_form_alter(&$form, &$form_state, $vbo) {
+  if (array_key_exists('operation', $form_state)) {
+    $op = $form_state['operation']->operationId;
+
+    switch ($op) {
+      case "action::og_user_roles_action":
+        drupal_set_title(t('Modify User Roles'));
+        break;
+      case "action::og_set_state_action":
+        drupal_set_title(t('Approve Membership Status'));
+        break;
+      case "action::og_membership_delete_action":
+        drupal_set_title(t('Remove Group Member'));
+        break;
+    }
+
+    if ($op == "action::og_user_roles_action") {
+
+      if ($form_state['step'] == "views_bulk_operations_config_form") {
+
+        $groups = $form['add_roles']['#options'];
+
+        $form['selected_roles'] = array(
+          '#type' => 'checkboxes',
+          '#options' => $groups,
+          '#title' => t('Member roles'),
+          '#description' => t('Choose one or more roles you would like to assign to the selected users.'),
+        );
+
+        array_unshift($form['actions']['submit']['#validate'], 'cwrc_theme_compat_vbo_validate');
+
+        unset($form['add_roles']);
+        unset($form['remove_roles']);
+      } else if ($form_state['step'] == "views_bulk_operations_confirm_form") {
+
+
+      }
+    }
+
+  }
+}
+
+function cwrc_theme_compat_vbo_validate(&$form, &$form_state) {
+  $add_roles = array();
+  $all_roles = $form['selected_roles']['#options'];
+  $remove_roles = array();
+  $add_roles_num = array();
+  $remove_roles_num = array();
+
+  foreach ($all_roles as $rid => $rname) {
+    if (array_key_exists($rid, $form['selected_roles']['#value'])) {
+      // It is selected
+      $add_roles[$rid] = $rname;
+      $add_roles_num[$rid] = $rid;
+    } else {
+      $remove_roles[$rid] = $rname;
+      $remove_roles_num[$rid] = $rid;
+    }
+  }
+
+  $form_state['input']['add_roles'] = array_keys($add_roles);
+  $form_state['input']['remove_roles'] = array_keys($remove_roles);
+  $form_state['values']['add_roles'] = $add_roles_num;
+  $form_state['values']['remove_roles'] = $remove_roles_num;
+
+  $form['add_roles'] = array(
+    '#value' => $add_roles_num,
+    '#options' => $all_roles,
+    '#multiple' => TRUE,
+    '#type' => 'select',
+  );
+  $form['remove_roles'] = array(
+    '#value' => $remove_roles_num,
+    '#options' => $all_roles,
+    '#multiple' => TRUE,
+    '#type' => 'select',
+  );
+}
