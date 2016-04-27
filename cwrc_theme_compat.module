@@ -102,3 +102,87 @@ function cwrc_theme_compat_vbo_validate(&$form, &$form_state) {
     '#type' => 'select',
   );
 }
+
+function cwrc_theme_compat_form_alter(&$form, &$form_state) {
+  if (array_key_exists('#form_id', $form) && $form['#form_id'] == "og_ui_add_users") {
+    $form['actions']['submit']['#value'] = t('Add User');
+  }
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function cwrc_theme_compat_block_info() {
+  $blocks['user_picture_block'] = array(
+    'info' => t('User Picture Block'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+  $blocks['sponsors_homepage_block'] = array(
+    'info' => t('Homepage Sponsors Block'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function cwrc_theme_compat_block_view($delta = '') {
+  $block = array();
+  switch ($delta) {
+    case 'user_picture_block':
+      $block['subject'] = t('User Picture');
+
+      $user = menu_get_object('user', 1);
+      if ($user == null) return NULL;
+
+      $picture = $user->picture;
+      if ($picture == null || empty($picture)) return NULL;
+
+      $block['content'] = "<div class=\"user-picture-header\"><img src=\"" . image_style_url('user_header_picture', $picture->uri) . "\" alt=\"" . realname_load($user) . "\"></div>";
+
+      break;
+    case 'sponsors_homepage_block':
+      $block['content'] = theme('cwrc_sponsors_block');
+  }
+  return $block;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function cwrc_theme_compat_theme($exsting, $type, $theme, $path) {
+  return array(
+    'cwrc_sponsors_block' => array(
+      'template' => 'templates/cwrc-sponsors-block',
+      'variables' => array(),
+    ),
+  );
+}
+
+/**
+ * Implements hook_block_view_alter().
+ */
+function cwrc_theme_compat_block_view_alter(&$data, $block) {
+  if ($block->module == "cwrc_search_bar" && $block->delta == "search") {
+    if (arg(0) == "notfound" || arg(0) == "r4032login") $data['content']['#action'] = url('<front>');
+  }
+
+  // Hide the system-main block if it uses #markup and is empty
+  if ($block->module == "system" && $block->delta == "main") {
+    if (count($data['content']) == 1 && array_key_exists(0, $data['content']) && array_key_exists('#markup', $data['content'][0]) && empty($data['content'][0]['#markup'])) {
+      $data['content'] = NULL;
+    }
+  }
+
+  // Always show the contact information footer on the project pages
+  // Note: this hash is used because the views block delta is > 32 characters
+  // so views MD5s it and uses that instead. As long as the block isn't renamed
+  // this should be consistent.
+  if ($block->module == "views" && $block->delta == "dd0cd778927866856aefa269a3cfc970") {
+    if ($data == NULL || empty($data)) {
+      $node = menu_get_object('node');
+      if ($node != NULL && $node->type == 'project') $data = array('content' => array('#markup' => ''), 'subject' => '');
+    }
+  }
+}
