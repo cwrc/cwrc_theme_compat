@@ -7,6 +7,8 @@
 
 include_once 'cwrc_theme_compat.features.inc';
 
+/* Hooks. */
+
 /**
  * Implements MODULE_preprocess_HOOK() for islandora_basic_collection().
  */
@@ -19,21 +21,6 @@ function cwrc_theme_compat_preprocess_islandora_basic_collection(&$variables) {
  */
 function cwrc_theme_compat_preprocess_islandora_basic_collection_grid(&$variables) {
   _cwrc_theme_compat_add_collection_classes($variables);
-}
-
-/**
- * Helper function to add classes to Islandora object HTML.
- */
-function _cwrc_theme_compat_add_collection_classes(&$variables) {
-  foreach ($variables['associated_objects_array'] as $pid => $obj) {
-    if (!array_key_exists('object', $obj)) {
-      return;
-    }
-
-    foreach ($obj['object']->models as $model) {
-      $variables['associated_objects_array'][$pid]['class'] .= ' ' . str_replace('.', '-', strtolower(str_replace(':', '-', $model)));
-    }
-  }
 }
 
 /**
@@ -81,53 +68,6 @@ function cwrc_theme_compat_views_bulk_operations_form_alter(&$form, &$form_state
     }
 
   }
-}
-
-/**
- * Form validation handler for views_bulk_operations_form().
- *
- * @see cwrc_theme_compat_views_bulk_operations_form_alter()
- */
-function cwrc_theme_compat_vbo_validate(&$form, &$form_state) {
-  $add_roles = array();
-  $all_roles = $form['selected_roles']['#options'];
-  $remove_roles = array();
-  $add_roles_num = array();
-  $remove_roles_num = array();
-
-  foreach ($all_roles as $rid => $rname) {
-    if (array_key_exists($rid, $form['selected_roles']['#value'])) {
-      // It is selected.
-      $add_roles[$rid] = $rname;
-      $add_roles_num[$rid] = $rid;
-    }
-    else {
-      $remove_roles[$rid] = $rname;
-      $remove_roles_num[$rid] = $rid;
-    }
-  }
-
-  // Modifying $form_state['input'] to ensure all modules see the new values.
-  // Note that *reading* from $form_state['input'] poses a security risk (see
-  // https://www.drupal.org/node/2489304 for more information); but we are
-  // *writing* to it here.
-  $form_state['input']['add_roles'] = array_keys($add_roles);
-  $form_state['input']['remove_roles'] = array_keys($remove_roles);
-  $form_state['values']['add_roles'] = $add_roles_num;
-  $form_state['values']['remove_roles'] = $remove_roles_num;
-
-  $form['add_roles'] = array(
-    '#value' => $add_roles_num,
-    '#options' => $all_roles,
-    '#multiple' => TRUE,
-    '#type' => 'select',
-  );
-  $form['remove_roles'] = array(
-    '#value' => $remove_roles_num,
-    '#options' => $all_roles,
-    '#multiple' => TRUE,
-    '#type' => 'select',
-  );
 }
 
 /**
@@ -222,6 +162,72 @@ function cwrc_theme_compat_block_view_alter(&$data, $block) {
       if ($node != NULL && $node->type == 'project') {
         $data = array('content' => array('#markup' => ''), 'subject' => '');
       }
+    }
+  }
+}
+
+/* Form handlers. */
+
+/**
+ * Form validation handler for views_bulk_operations_form().
+ *
+ * @see cwrc_theme_compat_views_bulk_operations_form_alter()
+ */
+function cwrc_theme_compat_vbo_validate(&$form, &$form_state) {
+  $add_roles = array();
+  $all_roles = $form['selected_roles']['#options'];
+  $remove_roles = array();
+  $add_roles_num = array();
+  $remove_roles_num = array();
+
+  foreach ($all_roles as $rid => $rname) {
+    if (array_key_exists($rid, $form['selected_roles']['#value'])) {
+      // It is selected.
+      $add_roles[$rid] = $rname;
+      $add_roles_num[$rid] = $rid;
+    }
+    else {
+      $remove_roles[$rid] = $rname;
+      $remove_roles_num[$rid] = $rid;
+    }
+  }
+
+  // Modifying $form_state['input'] to ensure all modules see the new values.
+  // Note that *reading* from $form_state['input'] poses a security risk (see
+  // https://www.drupal.org/node/2489304 for more information); but we are
+  // *writing* to it here.
+  $form_state['input']['add_roles'] = array_keys($add_roles);
+  $form_state['input']['remove_roles'] = array_keys($remove_roles);
+  $form_state['values']['add_roles'] = $add_roles_num;
+  $form_state['values']['remove_roles'] = $remove_roles_num;
+
+  $form['add_roles'] = array(
+    '#value' => $add_roles_num,
+    '#options' => $all_roles,
+    '#multiple' => TRUE,
+    '#type' => 'select',
+  );
+  $form['remove_roles'] = array(
+    '#value' => $remove_roles_num,
+    '#options' => $all_roles,
+    '#multiple' => TRUE,
+    '#type' => 'select',
+  );
+}
+
+/* Helper functions. */
+
+/**
+ * Helper function to add classes to Islandora object HTML.
+ */
+function _cwrc_theme_compat_add_collection_classes(&$variables) {
+  foreach ($variables['associated_objects_array'] as $pid => $obj) {
+    if (!array_key_exists('object', $obj)) {
+      return;
+    }
+
+    foreach ($obj['object']->models as $model) {
+      $variables['associated_objects_array'][$pid]['class'] .= ' ' . str_replace('.', '-', strtolower(str_replace(':', '-', $model)));
     }
   }
 }
