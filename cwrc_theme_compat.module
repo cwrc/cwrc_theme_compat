@@ -107,6 +107,10 @@ function cwrc_theme_compat_vbo_validate(&$form, &$form_state) {
     }
   }
 
+  // Modifying $form_state['input'] to ensure all modules see the new values.
+  // Note that *reading* from $form_state['input'] poses a security risk (see
+  // https://www.drupal.org/node/2489304 for more information); but we are
+  // *writing* to it here.
   $form_state['input']['add_roles'] = array_keys($add_roles);
   $form_state['input']['remove_roles'] = array_keys($remove_roles);
   $form_state['values']['add_roles'] = $add_roles_num;
