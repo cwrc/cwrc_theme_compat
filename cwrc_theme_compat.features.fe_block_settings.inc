@@ -90,7 +90,8 @@ function cwrc_theme_compat_default_fe_block_settings() {
     'i18n_mode' => 0,
     'module' => 'menu_block',
     'node_types' => array(),
-    'pages' => '',
+    'pages' => 'islandora*
+<front>',
     'roles' => array(),
     'themes' => array(
       'de_theme' => array(
